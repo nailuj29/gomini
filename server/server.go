@@ -62,26 +62,36 @@ func (s *Server) handleConnection(conn *tls.Conn) {
 	request := make([]byte, 1026)
 	_, err := conn.Read(request)
 	if err != nil {
+		log.Errorf("An error occurred while writing response: %s", err.Error())
 		return
 	}
 	requestUri := strings.Split(string(request), "\r\n")[0]
 	uri, err := url.Parse(requestUri)
 	if err != nil {
 		log.Error("Bad URI received")
-		conn.Write([]byte("59 Bad Request\r\n"))
+		_, err := conn.Write([]byte("59 Bad Request\r\n"))
+		if err != nil {
+			log.Errorf("An error occurred while writing response: %s", err.Error())
+		}
 		return
 	}
 
 	if uri.Scheme != "gemini" {
 		log.Error("Non-gemini URI received: " + requestUri)
-		conn.Write([]byte("59 Only gemini URIs are supported (for now)\r\n"))
+		_, err := conn.Write([]byte("59 Only gemini URIs are supported (for now)\r\n"))
+		if err != nil {
+			log.Errorf("An error occurred while writing response: %s", err.Error())
+		}
 		return
 	}
 
 	handler, ok := s.handlers[uri.Path]
 	if !ok {
 		log.Error(uri.Path + " not found")
-		conn.Write([]byte("51 Not Found\r\n"))
+		_, err := conn.Write([]byte("51 Not Found\r\n"))
+		if err != nil {
+			log.Errorf("An error occurred while writing response: %s", err.Error())
+		}
 		return
 	}
 
