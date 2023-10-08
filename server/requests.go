@@ -26,10 +26,5 @@ func (r *Request) GemtextFile(path string) error {
 		return err
 	}
 
-	_, err = r.conn.Write([]byte("20 text/gemini\r\n" + string(source)))
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return r.Gemtext(string(source))
 }
