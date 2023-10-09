@@ -1,9 +1,18 @@
 package gemtext
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 type Builder struct {
 	lines []string
+}
+
+func NewBuilder() Builder {
+	return Builder{
+		lines: make([]string, 0),
+	}
 }
 
 func (b *Builder) AddTextLine(line string) *Builder {
@@ -59,4 +68,8 @@ func (b *Builder) AddQuoteLine(text string) *Builder {
 	b.AddTextLine(fmt.Sprintf("> %s", text))
 
 	return b
+}
+
+func (b *Builder) Get() string {
+	return strings.Join(b.lines, "\r\n")
 }
