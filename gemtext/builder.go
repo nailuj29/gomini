@@ -24,7 +24,7 @@ func (b *Builder) AddLinkLine(url string, name ...string) *Builder {
 	if len(name) == 0 {
 		b.AddTextLine(fmt.Sprintf("=> %s", url))
 	} else {
-		b.AddTextLine(fmt.Sprintf("=> %s", name[0]))
+		b.AddTextLine(fmt.Sprintf("=> %s %s", url, name[0]))
 	}
 
 	return b
