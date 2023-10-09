@@ -2,6 +2,7 @@ package server
 
 import (
 	"crypto/tls"
+	"crypto/x509"
 	"net/url"
 	"os"
 )
@@ -27,4 +28,8 @@ func (r *Request) GemtextFile(path string) error {
 	}
 
 	return r.Gemtext(string(source))
+}
+
+func (r *Request) GetClientCertificates() []*x509.Certificate {
+	return r.conn.ConnectionState().PeerCertificates
 }
