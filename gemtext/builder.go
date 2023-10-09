@@ -20,7 +20,7 @@ func (b *Builder) AddTextLine(line string) *Builder {
 	return b
 }
 
-func (b *Builder) AddLinkLine(url string, name string) *Builder {
+func (b *Builder) AddLinkLine(url string, name ...string) *Builder {
 	if len(name) == 0 {
 		b.AddTextLine(fmt.Sprintf("=> %s", url))
 	} else {
