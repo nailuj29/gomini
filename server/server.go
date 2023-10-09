@@ -22,7 +22,7 @@ func New() *Server {
 	return &Server{}
 }
 
-func (s *Server) AddHandler(path string, handler Handler) {
+func (s *Server) RegisterHandler(path string, handler Handler) {
 	if s.handlers == nil {
 		s.handlers = make(map[string]Handler)
 	}

@@ -17,19 +17,19 @@ func main() {
 
 	s := server.New()
 
-	s.AddHandler("/", func(request server.Request) {
+	s.RegisterHandler("/", func(request server.Request) {
 		request.GemtextFile("index.gmi")
 	})
 
-	s.AddHandler("/test1", func(request server.Request) {
+	s.RegisterHandler("/test1", func(request server.Request) {
 		request.Gemtext("# Test 1!\r\nThis is the first test page")
 	})
 
-	s.AddHandler("/test2", func(request server.Request) {
+	s.RegisterHandler("/test2", func(request server.Request) {
 		request.Gemtext("# Test 2!\r\nThis is the second test page")
 	})
 
-	s.AddHandler("/gemtext", func(request server.Request) {
+	s.RegisterHandler("/gemtext", func(request server.Request) {
 		b := gemtext.NewBuilder()
 		b.AddHeader1Line("Gemtext").AddHeader2Line("Level 2").AddHeader3Line("Builder")
 		b.AddTextLine("Text Lines")
@@ -46,7 +46,7 @@ func main() {
 		request.Gemtext(b.Get())
 	})
 
-	s.AddHandler("/secure", func(request server.Request) {
+	s.RegisterHandler("/secure", func(request server.Request) {
 		certs := request.GetClientCertificates()
 
 		if len(certs) == 0 {
