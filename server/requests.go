@@ -29,7 +29,7 @@ func (r *Request) GemtextFile(path string) error {
 }
 
 func (r *Request) Error(code int, message string) error {
-	_, err := r.conn.Write([]byte(fmt.Sprintf("%d %s", code, message)))
+	_, err := r.conn.Write([]byte(fmt.Sprintf("%d %s\r\n", code, message)))
 
 	return err
 }
