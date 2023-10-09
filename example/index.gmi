@@ -1,3 +1,4 @@
-# Gemini test
+# Gomini test
 => gemini://localhost/test1 Test Page 1
 => gemini://localhost/test2 Test Page 2
+=> gemini://localhost/secure Secure Page

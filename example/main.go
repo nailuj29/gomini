@@ -12,7 +12,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	config := tls.Config{Certificates: []tls.Certificate{cer}}
+	config := tls.Config{Certificates: []tls.Certificate{cer}, ClientAuth: tls.RequestClientCert}
 
 	s := server.New()
 
@@ -26,6 +26,17 @@ func main() {
 
 	s.AddHandler("/test2", func(request server.Request) {
 		request.Gemtext("# Test 2!\r\nThis is the second test page")
+	})
+
+	s.AddHandler("/secure", func(request server.Request) {
+		certs := request.GetClientCertificates()
+
+		if len(certs) == 0 {
+			request.Error(60, "Cert required")
+			return
+		}
+
+		request.Gemtext("# Secure page\r\nWelcome!")
 	})
 
 	s.ListenAndServe("localhost", &config)
