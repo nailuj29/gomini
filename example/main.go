@@ -4,7 +4,7 @@ import (
 	"crypto/tls"
 	"log"
 
-	"github.com/nailuj29gaming/gemini/server"
+	"github.com/nailuj29gaming/gomini/server"
 )
 
 func main() {
