@@ -10,18 +10,23 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// A Handler is a function to handle a Request by calling its various methods.
+// The function is called when a request that it can handle, as outlined in Server.RegisterHandler
 type Handler func(request Request)
 
+// A Server contains information required to run a TCP/TLS service capable of serving Gemini content over the internet
 type Server struct {
 	handlers map[string]Handler
 	listener net.Listener
 	addr     string
 }
 
+// New creates a new Server
 func New() *Server {
 	return &Server{}
 }
 
+// RegisterHandler sets up a Handler to handle any Request that comes to a path
 func (s *Server) RegisterHandler(path string, handler Handler) {
 	if s.handlers == nil {
 		s.handlers = make(map[string]Handler)
@@ -29,7 +34,9 @@ func (s *Server) RegisterHandler(path string, handler Handler) {
 	s.handlers[path] = handler
 }
 
+// ListenAndServe starts the Server running on a specific port using the provided TLS configuration
 func (s *Server) ListenAndServe(addr string, tlsConfig *tls.Config) error {
+	// TODO: don't directly use tls.Config
 	lInsecure, err := net.Listen("tcp", addr+":1965")
 	if err != nil {
 		return err
