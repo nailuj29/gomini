@@ -1,4 +1,4 @@
-module github.com/nailuj29gaming/gomini
+module github.com/nailuj29/gomini
 
 go 1.21
 
