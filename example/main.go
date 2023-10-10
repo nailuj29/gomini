@@ -2,10 +2,10 @@ package main
 
 import (
 	"crypto/tls"
-	"github.com/nailuj29gaming/gomini/gemtext"
+	"github.com/nailuj29/gomini/gemtext"
 	"log"
 
-	"github.com/nailuj29gaming/gomini/server"
+	"github.com/nailuj29/gomini/server"
 )
 
 func main() {
@@ -31,17 +31,20 @@ func main() {
 
 	s.RegisterHandler("/gemtext", func(request server.Request) {
 		b := gemtext.NewBuilder()
-		b.AddHeader1Line("Gemtext").AddHeader2Line("Level 2").AddHeader3Line("Builder")
-		b.AddTextLine("Text Lines")
-		b.AddPreformattedText("Oh cool, code!")
-		b.AddLinkLine("gemini://localhost/", "Go Home")
-		b.AddQuoteLine("Please stop making up stuff I said")
-		b.AddTextLine("- Sun Tzu, Art of War")
-		b.AddUnorderedList([]string{
-			"Item 1",
-			"Item 2",
-			"Item 3",
-		})
+		b.
+			AddHeader1Line("Gemtext").
+			AddHeader2Line("Level 2").
+			AddHeader3Line("Builder").
+			AddTextLine("Text Lines").
+			AddPreformattedText("Oh cool, code!").
+			AddLinkLine("gemini://localhost/", "Go Home").
+			AddQuoteLine("Please stop making up stuff I said").
+			AddTextLine("- Sun Tzu, Art of War").
+			AddUnorderedList([]string{
+				"Item 1",
+				"Item 2",
+				"Item 3",
+			})
 
 		request.Gemtext(b.Get())
 	})
