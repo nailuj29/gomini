@@ -117,6 +117,7 @@ func (q QuoteLine) Type() LineType {
 	return Quote
 }
 
+// Parse parses a Gemtext document into a slice of Lines
 func Parse(source string) ([]Line, error) {
 	sourceLines := strings.Split(source, "\r\n")
 	lines := make([]Line, 0)
