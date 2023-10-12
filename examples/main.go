@@ -3,9 +3,8 @@ package main
 import (
 	"crypto/tls"
 	"github.com/nailuj29/gomini/gemtext"
-	"log"
-
 	"github.com/nailuj29/gomini/server"
+	"log"
 )
 
 func main() {
@@ -38,6 +37,7 @@ func main() {
 			AddTextLine("Text Lines").
 			AddPreformattedText("Oh cool, code!").
 			AddLinkLine("gemini://localhost/", "Go Home").
+			AddTextLine("").
 			AddQuoteLine("Please stop making up stuff I said").
 			AddTextLine("- Sun Tzu, Art of War").
 			AddUnorderedList([]string{
