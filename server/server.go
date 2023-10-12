@@ -1,3 +1,4 @@
+// Package server provides utilities for creating a functioning and useful Gemini server
 package server
 
 import (
