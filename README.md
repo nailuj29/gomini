@@ -14,5 +14,5 @@ Planned to support both client and server
   - [ ] Titan
 - [ ] Client
   - [ ] Make requests
-  - [ ] Gemtext Parser
+  - [x] Gemtext Parser
   - [ ] Titan
