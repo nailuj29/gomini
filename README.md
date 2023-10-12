@@ -1,4 +1,6 @@
 # gomini
+[![Go Reference](https://pkg.go.dev/badge/github.com/nailuj29/gomini.svg)](https://pkg.go.dev/github.com/nailuj29/gomini)
+
 Gemini Protocol libary for Golang
 
 Planned to support both client and server
