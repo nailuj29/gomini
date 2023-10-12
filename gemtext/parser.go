@@ -2,7 +2,6 @@ package gemtext
 
 import (
 	"errors"
-	"fmt"
 	"strings"
 )
 
@@ -143,7 +142,9 @@ func Parse(source string) ([]Line, error) {
 					Text:        "",
 				})
 			} else {
-				text := strings.TrimPrefix(l, fmt.Sprintf("=> %s", dest))
+				whiteSpaceDestAndText := strings.TrimPrefix(l, "=>")
+				destAndText := strings.TrimLeft(whiteSpaceDestAndText, " \t")
+				text := strings.TrimPrefix(destAndText, dest)
 				lines = append(lines, LinkLine{
 					Destination: dest,
 					Text:        strings.TrimLeft(text, " \t"),
