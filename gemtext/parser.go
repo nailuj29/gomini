@@ -1,5 +1,11 @@
 package gemtext
 
+import (
+	"errors"
+	"fmt"
+	"strings"
+)
+
 // LineType is an enumeration representing a Gemtext line type
 type LineType int
 
@@ -110,4 +116,87 @@ func (l ListItemLine) Type() LineType {
 
 func (q QuoteLine) Type() LineType {
 	return Quote
+}
+
+func Parse(source string) ([]Line, error) {
+	sourceLines := strings.Split(source, "\r\n")
+	lines := make([]Line, 0)
+	preformattingToggled := false
+	preAltText := ""
+	preLines := make([]string, 0)
+
+	for _, l := range sourceLines {
+		if preformattingToggled && !strings.HasPrefix(l, "```") {
+			preLines = append(preLines, l)
+			continue
+		}
+		if strings.HasPrefix(l, "=>") {
+			ll := strings.Fields(l)
+			if len(ll) < 2 {
+				return nil, errors.New("missing destination for link line")
+			}
+
+			dest := ll[1]
+			if len(ll) == 2 {
+				lines = append(lines, LinkLine{
+					Destination: dest,
+					Text:        "",
+				})
+			} else {
+				text := strings.TrimPrefix(l, fmt.Sprintf("=> %s", dest))
+				lines = append(lines, LinkLine{
+					Destination: dest,
+					Text:        strings.TrimLeft(text, " \t"),
+				})
+			}
+		} else if strings.HasPrefix(l, "```") {
+			if preformattingToggled {
+				preformattingToggled = false
+				lines = append(lines, PreformattedText{
+					Body:    strings.Join(preLines, "\r\n"),
+					AltText: preAltText,
+				})
+
+				continue
+			}
+
+			preAltText = strings.TrimPrefix(l, "```")
+			preformattingToggled = true
+		} else if strings.HasPrefix(l, "###") { // Must work backwards, or everything is a Header1
+			text := strings.TrimPrefix(l, "###")
+			lines = append(lines, Header3Line{
+				Text: strings.TrimLeft(text, " \t"),
+			})
+		} else if strings.HasPrefix(l, "##") {
+			text := strings.TrimPrefix(l, "##")
+			lines = append(lines, Header2Line{
+				Text: strings.TrimLeft(text, " \t"),
+			})
+		} else if strings.HasPrefix(l, "#") {
+			text := strings.TrimPrefix(l, "#")
+			lines = append(lines, Header1Line{
+				Text: strings.TrimLeft(text, " \t"),
+			})
+		} else if strings.HasPrefix(l, "*") {
+			text := strings.TrimPrefix(l, "*")
+			lines = append(lines, ListItemLine{
+				Text: strings.TrimLeft(text, " \t"),
+			})
+		} else if strings.HasPrefix(l, ">") {
+			text := strings.TrimPrefix(l, ">")
+			lines = append(lines, QuoteLine{
+				Text: strings.TrimLeft(text, " \t"),
+			})
+		} else {
+			lines = append(lines, TextLine{
+				Text: l,
+			})
+		}
+	}
+
+	if preformattingToggled {
+		return nil, errors.New("unclosed preformatting block")
+	}
+
+	return lines, nil
 }
