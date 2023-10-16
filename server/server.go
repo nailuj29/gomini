@@ -22,6 +22,13 @@ type Server struct {
 	addr     string
 }
 
+type routeTree struct {
+	isLeaf   bool
+	subPaths map[string]Handler
+	handler  Handler
+	varName  string
+}
+
 // New creates a new Server
 func New() *Server {
 	return &Server{}
