@@ -17,9 +17,9 @@ type Handler func(request Request)
 
 // A Server contains information required to run a TCP/TLS service capable of serving Gemini content over the internet
 type Server struct {
-	handlers map[string]Handler
-	listener net.Listener
-	addr     string
+	routeTree routeTree
+	listener  net.Listener
+	addr      string
 }
 
 type routeTree struct {
@@ -36,10 +36,7 @@ func New() *Server {
 
 // RegisterHandler sets up a Handler to handle any Request that comes to a path
 func (s *Server) RegisterHandler(path string, handler Handler) {
-	if s.handlers == nil {
-		s.handlers = make(map[string]Handler)
-	}
-	s.handlers[path] = handler
+
 }
 
 // ListenAndServe starts the Server running on a specific port using the provided TLS configuration
@@ -100,7 +97,7 @@ func (s *Server) handleConnection(conn *tls.Conn) {
 		return
 	}
 
-	handler, ok := s.handlers[uri.Path]
+	handler, ok := s.resolve(uri.Path)
 	if !ok {
 		log.Error(uri.Path + " not found")
 		_, err := conn.Write([]byte("51 Not Found\r\n"))
@@ -116,4 +113,8 @@ func (s *Server) handleConnection(conn *tls.Conn) {
 	})
 
 	log.Info("Request received for " + strings.TrimRight(requestUri, "\r\n"))
+}
+
+func (s *Server) resolve(path string) (Handler, bool) {
+	return nil, false
 }
