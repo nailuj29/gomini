@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net"
 	"net/url"
+	"regexp"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -17,9 +18,15 @@ type Handler func(request Request)
 
 // A Server contains information required to run a TCP/TLS service capable of serving Gemini content over the internet
 type Server struct {
-	handlers map[string]Handler
-	listener net.Listener
-	addr     string
+	staticRoutes  map[string]Handler
+	dynamicRoutes []route
+	listener      net.Listener
+	addr          string
+}
+
+type route struct {
+	regex   regexp.Regexp
+	handler Handler
 }
 
 // New creates a new Server
@@ -29,10 +36,10 @@ func New() *Server {
 
 // RegisterHandler sets up a Handler to handle any Request that comes to a path
 func (s *Server) RegisterHandler(path string, handler Handler) {
-	if s.handlers == nil {
-		s.handlers = make(map[string]Handler)
+	if s.staticRoutes == nil {
+		s.staticRoutes = make(map[string]Handler)
 	}
-	s.handlers[path] = handler
+	s.staticRoutes[path] = handler
 }
 
 // ListenAndServe starts the Server running on a specific port using the provided TLS configuration
@@ -93,7 +100,7 @@ func (s *Server) handleConnection(conn *tls.Conn) {
 		return
 	}
 
-	handler, ok := s.handlers[uri.Path]
+	handler, ok := s.staticRoutes[uri.Path]
 	if !ok {
 		log.Error(uri.Path + " not found")
 		_, err := conn.Write([]byte("51 Not Found\r\n"))
