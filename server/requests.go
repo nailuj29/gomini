@@ -12,7 +12,9 @@ import (
 // Request wraps a Gemini request.
 type Request struct {
 	// URI contains a url.URL object corresponding to the URL of the request.
-	URI        url.URL
+	URI url.URL
+	// Params contains a map of URL params passed into the request. Nil if there are no params.
+	Params     map[string]string
 	conn       *tls.Conn
 	terminated bool
 }
