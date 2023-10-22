@@ -100,8 +100,8 @@ func (s *Server) handleConnection(conn *tls.Conn) {
 		return
 	}
 
-	handler, ok := s.staticRoutes[uri.Path]
-	if !ok {
+	handler, err := s.resolve(uri.Path)
+	if err != nil {
 		log.Error(uri.Path + " not found")
 		_, err := conn.Write([]byte("51 Not Found\r\n"))
 		if err != nil {
@@ -116,4 +116,33 @@ func (s *Server) handleConnection(conn *tls.Conn) {
 	})
 
 	log.Info("Request received for " + strings.TrimRight(requestUri, "\r\n"))
+}
+
+func (s *Server) resolve(path string) (Handler, error) {
+	handler, ok := s.staticRoutes[path]
+	if ok {
+		return handler, nil
+	}
+
+	for _, route := range s.dynamicRoutes {
+		if route.regex.MatchString(path) {
+			submatches := route.regex.FindStringSubmatch(path)
+			params := make(map[string]string)
+			for i, submatch := range submatches {
+				if i == 0 {
+					continue
+				}
+
+				name := route.regex.SubexpNames()[i]
+				params[name] = submatch
+			}
+
+			return func(request Request) {
+				request.Params = params
+				route.handler(request)
+			}, nil
+		}
+	}
+
+	return nil, errors.New("route not found")
 }
