@@ -60,5 +60,16 @@ func main() {
 		request.Gemtext("# Secure page\r\nWelcome!")
 	})
 
+	s.RegisterHandler("/dynamic/:dynamic", func(request server.Request) {
+		param := request.Params["dynamic"]
+
+		b := gemtext.NewBuilder()
+		b.
+			AddHeader1Line("# Dynamic Route").
+			AddTextLine(param)
+
+		request.Gemtext(b.Get())
+	})
+
 	s.ListenAndServe("localhost", &config)
 }
