@@ -4,6 +4,7 @@ package server
 import (
 	"crypto/tls"
 	"errors"
+	"fmt"
 	"net"
 	"net/url"
 	"regexp"
@@ -25,7 +26,7 @@ type Server struct {
 }
 
 type route struct {
-	regex   regexp.Regexp
+	regex   *regexp.Regexp
 	handler Handler
 }
 
@@ -36,10 +37,29 @@ func New() *Server {
 
 // RegisterHandler sets up a Handler to handle any Request that comes to a path
 func (s *Server) RegisterHandler(path string, handler Handler) {
-	if s.staticRoutes == nil {
-		s.staticRoutes = make(map[string]Handler)
+	if !strings.ContainsRune(path, ':') {
+		if s.staticRoutes == nil {
+			s.staticRoutes = make(map[string]Handler)
+		}
+		s.staticRoutes[path] = handler
+	} else {
+		if s.dynamicRoutes == nil {
+			s.dynamicRoutes = make([]route, 0)
+		}
+
+		regex := "^" + path + "$"
+		parts := strings.Split(path, "/")
+		for _, part := range parts {
+			if strings.HasPrefix(part, ":") {
+				regex = strings.ReplaceAll(regex, part, fmt.Sprintf("(?P<%s>.*?)", part[1:]))
+			}
+		}
+
+		s.dynamicRoutes = append(s.dynamicRoutes, route{
+			regex:   regexp.MustCompile(regex),
+			handler: handler,
+		})
 	}
-	s.staticRoutes[path] = handler
 }
 
 // ListenAndServe starts the Server running on a specific port using the provided TLS configuration
