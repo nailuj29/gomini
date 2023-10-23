@@ -8,9 +8,9 @@ Planned to support both client and server
 ## Features
 - [ ] Server
   - [x] Request Handling 
-  - [ ] Routing
+  - [x] Routing
     - [x] Basic Paths
-    - [ ] Dynamic Paths
+    - [x] Dynamic Paths
   - [x] Gemtext Builder
   - [x] Read client certs
   - [ ] Titan
