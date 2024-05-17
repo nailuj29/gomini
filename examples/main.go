@@ -17,15 +17,24 @@ func main() {
 	s := server.New()
 
 	s.RegisterHandler("/", func(request server.Request) {
-		request.GemtextFile("index.gmi")
+		err := request.GemtextFile("index.gmi")
+		if err != nil {
+			log.Fatalf("could not respond: %v", err)
+		}
 	})
 
 	s.RegisterHandler("/test1", func(request server.Request) {
-		request.Gemtext("# Test 1!\r\nThis is the first test page")
+		err := request.Gemtext("# Test 1!\r\nThis is the first test page")
+		if err != nil {
+			log.Fatalf("could not respond: %v", err)
+		}
 	})
 
 	s.RegisterHandler("/test2", func(request server.Request) {
-		request.Gemtext("# Test 2!\r\nThis is the second test page")
+		err := request.Gemtext("# Test 2!\r\nThis is the second test page")
+		if err != nil {
+			log.Fatalf("could not respond: %v", err)
+		}
 	})
 
 	s.RegisterHandler("/gemtext", func(request server.Request) {
@@ -46,18 +55,27 @@ func main() {
 				"Item 3",
 			})
 
-		request.Gemtext(b.Get())
+		err := request.Gemtext(b.Get())
+		if err != nil {
+			log.Fatalf("could not respond: %v", err)
+		}
 	})
 
 	s.RegisterHandler("/secure", func(request server.Request) {
 		certs := request.GetClientCertificates()
 
 		if len(certs) == 0 {
-			request.Error(60, "Cert required")
+			err := request.Error(60, "Cert required")
+			if err != nil {
+				log.Fatalf("could not respond: %v", err)
+			}
 			return
 		}
 
-		request.Gemtext("# Secure page\r\nWelcome!")
+		err := request.Gemtext("# Secure page\r\nWelcome!")
+		if err != nil {
+			log.Fatalf("could not respond: %v", err)
+		}
 	})
 
 	s.RegisterHandler("/dynamic/:dynamic", func(request server.Request) {
@@ -68,8 +86,14 @@ func main() {
 			AddHeader1Line("# Dynamic Route").
 			AddTextLine(param)
 
-		request.Gemtext(b.Get())
+		err := request.Gemtext(b.Get())
+		if err != nil {
+			log.Fatalf("could not respond: %v", err)
+		}
 	})
 
-	s.ListenAndServe("localhost", &config)
+	err = s.ListenAndServe("localhost", &config)
+	if err != nil {
+		log.Fatalf("could not respond: %v", err)
+	}
 }
