@@ -2,6 +2,7 @@ package client
 
 import (
 	"crypto/tls"
+	"fmt"
 	log "github.com/sirupsen/logrus"
 	"io"
 	"net"
@@ -28,6 +29,8 @@ type Response struct {
 //
 // The config cannot be nil: users must set either ServerName or
 // InsecureSkipVerify in the config.
+//
+// TODO: Does not currently handle redirects.
 func Request(address string, tlsConfig *tls.Config) (*Response, error) {
 	parsedURL, err := url.Parse(address)
 	if err != nil {
@@ -57,6 +60,7 @@ func Request(address string, tlsConfig *tls.Config) (*Response, error) {
 		return nil, err
 	}
 
+	fmt.Println(responseData)
 	header := strings.Split(string(responseData), "\r\n")[0]
 	headerParts := strings.Split(header, " ")
 	statusCode, err := strconv.Atoi(headerParts[0])
@@ -67,7 +71,7 @@ func Request(address string, tlsConfig *tls.Config) (*Response, error) {
 
 	return &Response{
 		StatusCode: statusCode,
-		Data:       responseData[len(header):],
+		Data:       responseData[len(header)+2:],
 		MetaData:   metaData,
 	}, nil
 }
