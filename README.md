@@ -15,6 +15,6 @@ Planned to support both client and server
   - [x] Read client certs
   - [ ] Titan
 - [ ] Client
-  - [ ] Make requests
+  - [x] Make requests
   - [x] Gemtext Parser
   - [ ] Titan
