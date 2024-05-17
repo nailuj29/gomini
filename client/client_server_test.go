@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestBasicRequest(t *testing.T) {
+func TestBasicRequestResponse(t *testing.T) {
 	cer, err := tls.LoadX509KeyPair("../examples/cert.pem", "../examples/key.pem")
 	if err != nil {
 		t.Fatal(err)
@@ -20,13 +20,17 @@ func TestBasicRequest(t *testing.T) {
 		b := gemtext.NewBuilder()
 		b.AddHeader1Line("Hello, World!")
 
-		r.Gemtext(b.Get())
+		err := r.Gemtext(b.Get())
+		if err != nil {
+			t.Errorf("handler failed to respond to request: %v", err)
+		}
 	})
 
 	go func() {
 		err := s.ListenAndServe("localhost", &config)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
+			return
 		}
 	}()
 
