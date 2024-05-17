@@ -2,7 +2,6 @@ package client
 
 import (
 	"crypto/tls"
-	"fmt"
 	log "github.com/sirupsen/logrus"
 	"io"
 	"net"
@@ -60,7 +59,6 @@ func Request(address string, tlsConfig *tls.Config) (*Response, error) {
 		return nil, err
 	}
 
-	fmt.Println(responseData)
 	header := strings.Split(string(responseData), "\r\n")[0]
 	headerParts := strings.Split(header, " ")
 	statusCode, err := strconv.Atoi(headerParts[0])
