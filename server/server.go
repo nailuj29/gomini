@@ -69,13 +69,23 @@ func (s *Server) ListenAndServe(addr string, tlsConfig *tls.Config) error {
 	if err != nil {
 		return err
 	}
-	defer lInsecure.Close()
+	defer func(lInsecure net.Listener) {
+		err := lInsecure.Close()
+		if err != nil {
+			log.Errorf("%v", err)
+		}
+	}(lInsecure)
 
 	l := tls.NewListener(lInsecure, tlsConfig)
 	s.listener = l
 	s.addr = addr
 
-	defer l.Close()
+	defer func(l net.Listener) {
+		err := l.Close()
+		if err != nil {
+			log.Errorf("%v", err)
+		}
+	}(l)
 
 	log.Info("Listening on ", "gemini://"+addr+":1965")
 	for {
@@ -92,7 +102,12 @@ func (s *Server) ListenAndServe(addr string, tlsConfig *tls.Config) error {
 }
 
 func (s *Server) handleConnection(conn *tls.Conn) {
-	defer conn.Close()
+	defer func(conn *tls.Conn) {
+		err := conn.Close()
+		if err != nil {
+			log.Errorf("%v", err)
+		}
+	}(conn)
 
 	request := make([]byte, 1026)
 	_, err := conn.Read(request)
