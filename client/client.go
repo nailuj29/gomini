@@ -23,6 +23,11 @@ type Response struct {
 	StatusCode int
 }
 
+// Request sends a Gemini request to address
+// tlsConfig will be removed in a future update. Per the tls.Client documentation,
+//
+// The config cannot be nil: users must set either ServerName or
+// InsecureSkipVerify in the config.
 func Request(address string, tlsConfig *tls.Config) (*Response, error) {
 	parsedURL, err := url.Parse(address)
 	if err != nil {
