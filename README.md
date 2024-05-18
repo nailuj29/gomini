@@ -4,7 +4,7 @@
 
 Gemini Protocol libary for Golang
 
-Planned to support both client and server
+Supports both client and server
 
 ## Features
 - [ ] Server
