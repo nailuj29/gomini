@@ -47,19 +47,24 @@ func (s *Server) RegisterHandler(path string, handler Handler) {
 			s.dynamicRoutes = make([]route, 0)
 		}
 
-		regex := "^" + path + "$"
-		parts := strings.Split(path, "/")
-		for _, part := range parts {
-			if strings.HasPrefix(part, ":") {
-				regex = strings.ReplaceAll(regex, part, fmt.Sprintf("(?P<%s>.*?)", part[1:]))
-			}
-		}
+		regex := createDynamicPathRegex(path)
 
 		s.dynamicRoutes = append(s.dynamicRoutes, route{
 			regex:   regexp.MustCompile(regex),
 			handler: handler,
 		})
 	}
+}
+
+func createDynamicPathRegex(path string) string {
+	regex := "^" + path + "$"
+	parts := strings.Split(path, "/")
+	for _, part := range parts {
+		if strings.HasPrefix(part, ":") {
+			regex = strings.ReplaceAll(regex, part, fmt.Sprintf("(?P<%s>.*?)", part[1:]))
+		}
+	}
+	return regex
 }
 
 // ListenAndServe starts the Server running on a specific port using the provided TLS configuration
@@ -126,31 +131,35 @@ func (s *Server) handleConnection(conn *tls.Conn) {
 		return
 	}
 
-	if uri.Scheme != "gemini" {
-		log.Error("Non-gemini URI received: " + requestUri)
-		_, err := conn.Write([]byte("59 Only gemini URIs are supported (for now)\r\n"))
+	if uri.Scheme != "gemini" && uri.Scheme != "titan" {
+		log.Error("Non-gemini or titan URI received: " + requestUri)
+		_, err := conn.Write([]byte("59 Only gemini and titan URIs are supported (for now)\r\n"))
 		if err != nil {
 			log.Errorf("An error occurred while writing response: %s", err.Error())
 		}
 		return
 	}
 
-	handler, err := s.resolve(uri.Path)
-	if err != nil {
-		log.Error(uri.Path + " not found")
-		_, err := conn.Write([]byte("51 Not Found\r\n"))
+	if uri.Scheme == "gemini" {
+		handler, err := s.resolve(uri.Path)
 		if err != nil {
-			log.Errorf("An error occurred while writing response: %s", err.Error())
+			log.Error(uri.Path + " not found")
+			_, err := conn.Write([]byte("51 Not Found\r\n"))
+			if err != nil {
+				log.Errorf("An error occurred while writing response: %s", err.Error())
+			}
+			return
 		}
-		return
+
+		handler(Request{
+			URI:  *uri,
+			conn: conn,
+		})
+
+		log.Info("Gemini request received for " + strings.TrimRight(requestUri, "\r\n"))
+	} else {
+		// TODO: Route Titan requests to separate handlers
 	}
-
-	handler(Request{
-		URI:  *uri,
-		conn: conn,
-	})
-
-	log.Info("Request received for " + strings.TrimRight(requestUri, "\r\n"))
 }
 
 func (s *Server) resolve(path string) (Handler, error) {
