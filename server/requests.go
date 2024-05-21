@@ -19,8 +19,17 @@ type Request struct {
 	terminated bool
 }
 
+// TitanRequest wraps a Titan request.
+//
+// Contains Request, so can be used like a Gemini request as well.
 type TitanRequest struct {
 	Request
+	// Token contains the answer to the security question, or an empty string
+	Token string
+	// MIMEType contains the MIME type of the data. Defaults to "text/gemini"
+	MIMEType string
+	// Body contains the data sent by the client
+	Body []byte
 }
 
 // Gemtext responds using a gemtext string and status code 20.
