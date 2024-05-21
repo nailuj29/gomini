@@ -19,6 +19,10 @@ type Request struct {
 	terminated bool
 }
 
+type TitanRequest struct {
+	Request
+}
+
 // Gemtext responds using a gemtext string and status code 20.
 // After calling this method, the Request has been terminated.
 func (r *Request) Gemtext(source string) error {
