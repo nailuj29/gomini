@@ -14,8 +14,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// A Handler is a function to handle a Request by calling its various methods.
-// The function is called when a request that it can handle is made, as outlined in Server.RegisterHandler
+// A Handler is a function to handle a [Request] by calling its various methods.
+// The function is called when a request that it can handle is made, as outlined in [Server.RegisterHandler]
 type Handler func(request Request)
 
 // A TitanHandler is a function to handle a TitanRequest by calling its various methods.
@@ -43,12 +43,12 @@ type titanRoute struct {
 	handler TitanHandler
 }
 
-// New creates a new Server
+// New creates a new [Server]
 func New() *Server {
 	return &Server{}
 }
 
-// RegisterHandler sets up a Handler to handle any Request that comes to a path
+// RegisterHandler sets up a [Handler] to handle any [Request] that comes to a path
 func (s *Server) RegisterHandler(path string, handler Handler) {
 	if !strings.ContainsRune(path, ':') {
 		if s.staticRoutes == nil {
@@ -80,7 +80,7 @@ func createDynamicPathRegex(path string) string {
 	return regex
 }
 
-// ListenAndServe starts the Server running on a specific port using the provided TLS configuration
+// ListenAndServe starts the [Server] running on a specific port using the provided TLS configuration
 func (s *Server) ListenAndServe(addr string, tlsConfig *tls.Config) error {
 	// TODO: don't directly use tls.Config
 	lInsecure, err := net.Listen("tcp", addr+":1965")
