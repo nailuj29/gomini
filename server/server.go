@@ -121,10 +121,26 @@ func (s *Server) handleConnection(conn *tls.Conn) {
 	}(conn)
 
 	request := make([]byte, 1026)
-	_, err := conn.Read(request)
-	if err != nil {
-		log.Errorf("An error occurred while writing response: %s", err.Error())
-		return
+	buf := make([]byte, 1)
+	var prevByte byte = 0
+	i := 0
+	done := false
+	for !done {
+		_, err := conn.Read(buf)
+		if err != nil {
+			log.Errorf("An error occurred while reading request %v", err)
+			_, err := conn.Write([]byte("59 Bad Request\r\n"))
+			if err != nil {
+				log.Errorf("An error occurred while writing response: %s", err.Error())
+			}
+			return
+		}
+		request[i] = buf[0]
+		i++
+		if prevByte == 13 && buf[0] == 10 {
+			done = true
+		}
+		prevByte = buf[0]
 	}
 	requestUri := strings.Split(string(request), "\r\n")[0]
 	uri, err := url.Parse(requestUri)
@@ -220,6 +236,7 @@ func (s *Server) handleConnection(conn *tls.Conn) {
 			}
 
 			titanRequest.Body = body
+			log.Infof("Titan request received for %s", strings.TrimRight(requestUri, "\r\n"))
 		}
 	}
 }
