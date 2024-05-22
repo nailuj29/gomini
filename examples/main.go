@@ -4,7 +4,8 @@ import (
 	"crypto/tls"
 	"github.com/nailuj29/gomini/gemtext"
 	"github.com/nailuj29/gomini/server"
-	"log"
+
+	log "github.com/sirupsen/logrus"
 )
 
 func main() {
@@ -89,6 +90,15 @@ func main() {
 		err := request.Gemtext(b.Get())
 		if err != nil {
 			log.Fatalf("could not respond: %v", err)
+		}
+	})
+
+	s.RegisterTitanHandler("/", func(r server.TitanRequest) {
+		log.Infof("Titan request recieved. Body: \n```\n%s\n```", string(r.Body))
+		err := r.Gemtext(string(r.Body))
+		if err != nil {
+			log.Fatalf("could not respond: %v", err)
+			return
 		}
 	})
 

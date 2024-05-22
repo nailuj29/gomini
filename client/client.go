@@ -1,3 +1,4 @@
+// Package client contains utilities to make Gemini requests
 package client
 
 import (
@@ -10,7 +11,7 @@ import (
 	"strings"
 )
 
-// Response represents a Gemini Response
+// A Response represents a Gemini response
 type Response struct {
 	// Data contains the raw data returned from the server.
 	// TODO: implement function to pipe this straight to Gemtext parser
@@ -24,7 +25,7 @@ type Response struct {
 }
 
 // Request sends a Gemini request to address
-// tlsConfig will be removed in a future update. Per the tls.Client documentation,
+// tlsConfig will be removed in a future update. Per the [tls.Client] documentation,
 //
 // The config cannot be nil: users must set either ServerName or
 // InsecureSkipVerify in the config.

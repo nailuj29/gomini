@@ -10,14 +10,14 @@ type Builder struct {
 	lines []string
 }
 
-// NewBuilder creates a new Builder
+// NewBuilder creates a new [Builder]
 func NewBuilder() Builder {
 	return Builder{
 		lines: make([]string, 0),
 	}
 }
 
-// AddTextLine adds a new text line (i.e. no additional formatting) to the Builder
+// AddTextLine adds a new text line (i.e. no additional formatting) to the [Builder]
 func (b *Builder) AddTextLine(line string) *Builder {
 	b.lines = append(b.lines, line)
 	return b

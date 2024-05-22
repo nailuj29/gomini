@@ -13,16 +13,19 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// A Handler is a function to handle a Request by calling its various methods.
-// The function is called when a request that it can handle, as outlined in Server.RegisterHandler
+// A Handler is a function to handle a [Request] by calling its various methods.
+// The function is called when a request that it can handle is made, as outlined in [Server.RegisterHandler]
 type Handler func(request Request)
 
 // A Server contains information required to run a TCP/TLS service capable of serving Gemini content over the internet
 type Server struct {
-	staticRoutes  map[string]Handler
-	dynamicRoutes []route
-	listener      net.Listener
-	addr          string
+	staticRoutes       map[string]Handler
+	staticTitanRoutes  map[string]TitanHandler
+	dynamicRoutes      []route
+	dynamicTitanRoutes []titanRoute
+	listener           net.Listener
+	addr               string
+	running            bool
 }
 
 type route struct {
@@ -30,12 +33,12 @@ type route struct {
 	handler Handler
 }
 
-// New creates a new Server
+// New creates a new [Server]
 func New() *Server {
 	return &Server{}
 }
 
-// RegisterHandler sets up a Handler to handle any Request that comes to a path
+// RegisterHandler sets up a [Handler] to handle any [Request] that comes to a path
 func (s *Server) RegisterHandler(path string, handler Handler) {
 	if !strings.ContainsRune(path, ':') {
 		if s.staticRoutes == nil {
@@ -47,13 +50,7 @@ func (s *Server) RegisterHandler(path string, handler Handler) {
 			s.dynamicRoutes = make([]route, 0)
 		}
 
-		regex := "^" + path + "$"
-		parts := strings.Split(path, "/")
-		for _, part := range parts {
-			if strings.HasPrefix(part, ":") {
-				regex = strings.ReplaceAll(regex, part, fmt.Sprintf("(?P<%s>.*?)", part[1:]))
-			}
-		}
+		regex := createDynamicPathRegex(path)
 
 		s.dynamicRoutes = append(s.dynamicRoutes, route{
 			regex:   regexp.MustCompile(regex),
@@ -62,33 +59,39 @@ func (s *Server) RegisterHandler(path string, handler Handler) {
 	}
 }
 
-// ListenAndServe starts the Server running on a specific port using the provided TLS configuration
+func createDynamicPathRegex(path string) string {
+	regex := "^" + path + "$"
+	parts := strings.Split(path, "/")
+	for _, part := range parts {
+		if strings.HasPrefix(part, ":") {
+			regex = strings.ReplaceAll(regex, part, fmt.Sprintf("(?P<%s>.*?)", part[1:]))
+		}
+	}
+	return regex
+}
+
+// ListenAndServe starts the [Server] running on a specific port using the provided TLS configuration
 func (s *Server) ListenAndServe(addr string, tlsConfig *tls.Config) error {
 	// TODO: don't directly use tls.Config
 	lInsecure, err := net.Listen("tcp", addr+":1965")
 	if err != nil {
 		return err
 	}
-	defer func(lInsecure net.Listener) {
-		err := lInsecure.Close()
-		if err != nil {
-			log.Errorf("%v", err)
-		}
-	}(lInsecure)
 
 	l := tls.NewListener(lInsecure, tlsConfig)
 	s.listener = l
 	s.addr = addr
 
-	defer func(l net.Listener) {
-		err := l.Close()
-		if err != nil {
-			log.Errorf("%v", err)
+	defer func() {
+		if s.running {
+			lInsecure.Close()
+			l.Close()
 		}
-	}(l)
+	}()
 
 	log.Info("Listening on ", "gemini://"+addr+":1965")
-	for {
+	s.running = true
+	for s.running {
 		conn, err := l.Accept()
 		tlsConn, ok := conn.(*tls.Conn)
 		if !ok {
@@ -99,21 +102,38 @@ func (s *Server) ListenAndServe(addr string, tlsConfig *tls.Config) error {
 		}
 		go s.handleConnection(tlsConn)
 	}
+	return nil
+}
+
+func (s *Server) Close() error {
+	s.running = false
+	return s.listener.Close()
 }
 
 func (s *Server) handleConnection(conn *tls.Conn) {
-	defer func(conn *tls.Conn) {
-		err := conn.Close()
-		if err != nil {
-			log.Errorf("%v", err)
-		}
-	}(conn)
+	defer conn.Close()
 
 	request := make([]byte, 1026)
-	_, err := conn.Read(request)
-	if err != nil {
-		log.Errorf("An error occurred while writing response: %s", err.Error())
-		return
+	buf := make([]byte, 1)
+	var prevByte byte = 0
+	i := 0
+	done := false
+	for !done {
+		_, err := conn.Read(buf)
+		if err != nil {
+			log.Errorf("An error occurred while reading request %v", err)
+			_, err := conn.Write([]byte("59 Bad Request\r\n"))
+			if err != nil {
+				log.Errorf("An error occurred while writing response: %s", err.Error())
+			}
+			return
+		}
+		request[i] = buf[0]
+		i++
+		if prevByte == 13 && buf[0] == 10 {
+			done = true
+		}
+		prevByte = buf[0]
 	}
 	requestUri := strings.Split(string(request), "\r\n")[0]
 	uri, err := url.Parse(requestUri)
@@ -126,15 +146,23 @@ func (s *Server) handleConnection(conn *tls.Conn) {
 		return
 	}
 
-	if uri.Scheme != "gemini" {
-		log.Error("Non-gemini URI received: " + requestUri)
-		_, err := conn.Write([]byte("59 Only gemini URIs are supported (for now)\r\n"))
+	if uri.Scheme != "gemini" && uri.Scheme != "titan" {
+		log.Error("Non-gemini or titan URI received: " + requestUri)
+		_, err := conn.Write([]byte("59 Only gemini and titan URIs are supported (for now)\r\n"))
 		if err != nil {
 			log.Errorf("An error occurred while writing response: %s", err.Error())
 		}
 		return
 	}
 
+	if uri.Scheme == "gemini" {
+		s.handleGeminiRequest(conn, uri)
+	} else {
+		s.handleTitanRequest(conn, uri)
+	}
+}
+
+func (s *Server) handleGeminiRequest(conn *tls.Conn, uri *url.URL) {
 	handler, err := s.resolve(uri.Path)
 	if err != nil {
 		log.Error(uri.Path + " not found")
@@ -150,7 +178,7 @@ func (s *Server) handleConnection(conn *tls.Conn) {
 		conn: conn,
 	})
 
-	log.Info("Request received for " + strings.TrimRight(requestUri, "\r\n"))
+	log.Info("Gemini request received for " + strings.TrimRight(uri.String(), "\r\n"))
 }
 
 func (s *Server) resolve(path string) (Handler, error) {
@@ -161,16 +189,7 @@ func (s *Server) resolve(path string) (Handler, error) {
 
 	for _, route := range s.dynamicRoutes {
 		if route.regex.MatchString(path) {
-			submatches := route.regex.FindStringSubmatch(path)
-			params := make(map[string]string)
-			for i, submatch := range submatches {
-				if i == 0 {
-					continue
-				}
-
-				name := route.regex.SubexpNames()[i]
-				params[name] = submatch
-			}
+			params := extractParams(path, route.regex)
 
 			return func(request Request) {
 				request.Params = params
@@ -180,4 +199,18 @@ func (s *Server) resolve(path string) (Handler, error) {
 	}
 
 	return nil, errors.New("route not found")
+}
+
+func extractParams(path string, regex *regexp.Regexp) map[string]string {
+	submatches := regex.FindStringSubmatch(path)
+	params := make(map[string]string)
+	for i, submatch := range submatches {
+		if i == 0 {
+			continue
+		}
+
+		name := regex.SubexpNames()[i]
+		params[name] = submatch
+	}
+	return params
 }
