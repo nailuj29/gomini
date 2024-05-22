@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/url"
 	"regexp"
+	"strconv"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -163,7 +164,63 @@ func (s *Server) handleConnection(conn *tls.Conn) {
 
 		log.Info("Gemini request received for " + strings.TrimRight(requestUri, "\r\n"))
 	} else {
-		// TODO: Route Titan requests to separate handlers
+		rawParameters := strings.Split(uri.Path, ";")[1:]
+		parameters := make(map[string]string)
+		for _, rawParameter := range rawParameters {
+			parameter := strings.Split(rawParameter, "=")
+			if len(parameter) != 2 {
+				log.Error("Malformed Parameter: " + rawParameter)
+				_, err := conn.Write([]byte("59 Malformed parameter\r\n"))
+				if err != nil {
+					log.Errorf("An error occurred while writing response: %s", err.Error())
+				}
+				return
+			}
+			parameters[parameter[0]] = parameter[1]
+		}
+
+		titanRequest := TitanRequest{}
+		token, ok := parameters["token"]
+		if !ok {
+			titanRequest.Token = ""
+		} else {
+			titanRequest.Token = token
+		}
+
+		mimeType, ok := parameters["mime"]
+		if !ok {
+			titanRequest.MIMEType = "text/gemini"
+		} else {
+			titanRequest.MIMEType = mimeType
+		}
+
+		size, ok := parameters["size"]
+		if !ok {
+			log.Error("Missing size parameter")
+			_, err := conn.Write([]byte("59 Missing size parameter\r\n"))
+			if err != nil {
+				log.Errorf("An error occurred while writing response: %s", err.Error())
+			}
+			return
+		} else {
+			sizeInt, err := strconv.Atoi(size)
+			if err != nil {
+				log.Error("Malformed size parameter: " + size)
+				_, err := conn.Write([]byte("59 Size must be a number\r\n"))
+				if err != nil {
+					log.Errorf("An error occurred while writing response: %s", err.Error())
+				}
+				return
+			}
+			body := make([]byte, sizeInt)
+			_, err = conn.Read(body)
+			if err != nil {
+				log.Errorf("An error occurred while reading request body: %s", err.Error())
+				return
+			}
+
+			titanRequest.Body = body
+		}
 	}
 }
 
