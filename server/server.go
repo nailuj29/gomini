@@ -170,6 +170,7 @@ func (s *Server) handleGeminiRequest(conn *tls.Conn, uri *url.URL) {
 		if err != nil {
 			log.Errorf("An error occurred while writing response: %s", err.Error())
 		}
+		return
 	}
 
 	handler(Request{
