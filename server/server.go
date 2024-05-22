@@ -70,6 +70,27 @@ func (s *Server) RegisterHandler(path string, handler Handler) {
 	}
 }
 
+// RegisterTitanHandler sets up a [TitanHandler] to handle any [TitanRequest] that comes to a path
+func (s *Server) RegisterTitanHandler(path string, handler TitanHandler) {
+	if !strings.ContainsRune(path, ':') {
+		if s.staticTitanRoutes == nil {
+			s.staticTitanRoutes = make(map[string]TitanHandler)
+		}
+		s.staticTitanRoutes[path] = handler
+	} else {
+		if s.dynamicTitanRoutes == nil {
+			s.dynamicTitanRoutes = make([]titanRoute, 0)
+		}
+
+		regex := createDynamicPathRegex(path)
+
+		s.dynamicTitanRoutes = append(s.dynamicTitanRoutes, titanRoute{
+			regex:   regexp.MustCompile(regex),
+			handler: handler,
+		})
+	}
+}
+
 func createDynamicPathRegex(path string) string {
 	regex := "^" + path + "$"
 	parts := strings.Split(path, "/")
@@ -230,6 +251,20 @@ func (s *Server) handleTitanRequest(conn *tls.Conn, uri *url.URL) {
 		}
 
 		titanRequest.Body = body
+
+		handler, err := s.titanResolve(strings.Split(uri.Path, ";")[0])
+		if err != nil {
+			log.Error(uri.Path + " not found")
+			_, err := conn.Write([]byte("51 Not Found\r\n"))
+			if err != nil {
+				log.Errorf("An error occurred while writing response: %s", err.Error())
+			}
+
+			return
+		}
+
+		titanRequest.conn = conn
+		handler(titanRequest)
 		log.Infof("Titan request received for %s", strings.TrimRight(uri.String(), "\r\n"))
 	}
 }
@@ -250,6 +285,26 @@ func (s *Server) handleGeminiRequest(conn *tls.Conn, uri *url.URL) {
 	})
 
 	log.Info("Gemini request received for " + strings.TrimRight(uri.String(), "\r\n"))
+}
+
+func (s *Server) titanResolve(path string) (TitanHandler, error) {
+	handler, ok := s.staticTitanRoutes[path]
+	if ok {
+		return handler, nil
+	}
+
+	for _, route := range s.dynamicTitanRoutes {
+		if route.regex.MatchString(path) {
+			params := extractParams(path, route.regex)
+
+			return func(request TitanRequest) {
+				request.Params = params
+				route.handler(request)
+			}, nil
+		}
+	}
+
+	return nil, errors.New("route not found")
 }
 
 func (s *Server) resolve(path string) (Handler, error) {
