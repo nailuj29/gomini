@@ -256,16 +256,7 @@ func (s *Server) resolve(path string) (Handler, error) {
 
 	for _, route := range s.dynamicRoutes {
 		if route.regex.MatchString(path) {
-			submatches := route.regex.FindStringSubmatch(path)
-			params := make(map[string]string)
-			for i, submatch := range submatches {
-				if i == 0 {
-					continue
-				}
-
-				name := route.regex.SubexpNames()[i]
-				params[name] = submatch
-			}
+			params := extractParams(path, route.regex)
 
 			return func(request Request) {
 				request.Params = params
@@ -275,4 +266,18 @@ func (s *Server) resolve(path string) (Handler, error) {
 	}
 
 	return nil, errors.New("route not found")
+}
+
+func extractParams(path string, regex *regexp.Regexp) map[string]string {
+	submatches := regex.FindStringSubmatch(path)
+	params := make(map[string]string)
+	for i, submatch := range submatches {
+		if i == 0 {
+			continue
+		}
+
+		name := regex.SubexpNames()[i]
+		params[name] = submatch
+	}
+	return params
 }
