@@ -17,6 +17,11 @@ import (
 // The function is called when a request that it can handle, as outlined in Server.RegisterHandler
 type Handler func(request Request)
 
+// A TitanHandler is a function to handle a TitanRequest by calling its various methods.
+// The function is called when a titan request that it can handle is made as outlined in Server.RegisterTitanHandler
+// TODO: Create Server.RegisterTitanHandler
+type TitanHandler func(request TitanRequest)
+
 // A Server contains information required to run a TCP/TLS service capable of serving Gemini content over the internet
 type Server struct {
 	staticRoutes  map[string]Handler
