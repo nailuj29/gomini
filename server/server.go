@@ -167,82 +167,89 @@ func (s *Server) handleConnection(conn *tls.Conn) {
 	}
 
 	if uri.Scheme == "gemini" {
-		handler, err := s.resolve(uri.Path)
-		if err != nil {
-			log.Error(uri.Path + " not found")
-			_, err := conn.Write([]byte("51 Not Found\r\n"))
-			if err != nil {
-				log.Errorf("An error occurred while writing response: %s", err.Error())
-			}
-			return
-		}
-
-		handler(Request{
-			URI:  *uri,
-			conn: conn,
-		})
-
-		log.Info("Gemini request received for " + strings.TrimRight(requestUri, "\r\n"))
+		s.handleGeminiRequest(conn, uri)
 	} else {
-		rawParameters := strings.Split(uri.Path, ";")[1:]
-		parameters := make(map[string]string)
-		for _, rawParameter := range rawParameters {
-			parameter := strings.Split(rawParameter, "=")
-			if len(parameter) != 2 {
-				log.Error("Malformed Parameter: " + rawParameter)
-				_, err := conn.Write([]byte("59 Malformed parameter\r\n"))
-				if err != nil {
-					log.Errorf("An error occurred while writing response: %s", err.Error())
-				}
-				return
-			}
-			parameters[parameter[0]] = parameter[1]
-		}
+		s.handleTitanRequest(conn, uri)
+	}
+}
 
-		titanRequest := TitanRequest{}
-		token, ok := parameters["token"]
-		if !ok {
-			titanRequest.Token = ""
-		} else {
-			titanRequest.Token = token
-		}
-
-		mimeType, ok := parameters["mime"]
-		if !ok {
-			titanRequest.MIMEType = "text/gemini"
-		} else {
-			titanRequest.MIMEType = mimeType
-		}
-
-		size, ok := parameters["size"]
-		if !ok {
-			log.Error("Missing size parameter")
-			_, err := conn.Write([]byte("59 Missing size parameter\r\n"))
+func (s *Server) handleTitanRequest(conn *tls.Conn, uri *url.URL) {
+	rawParameters := strings.Split(uri.Path, ";")[1:]
+	parameters := make(map[string]string)
+	for _, rawParameter := range rawParameters {
+		parameter := strings.Split(rawParameter, "=")
+		if len(parameter) != 2 {
+			log.Error("Malformed Parameter: " + rawParameter)
+			_, err := conn.Write([]byte("59 Malformed parameter\r\n"))
 			if err != nil {
 				log.Errorf("An error occurred while writing response: %s", err.Error())
 			}
 			return
-		} else {
-			sizeInt, err := strconv.Atoi(size)
-			if err != nil {
-				log.Error("Malformed size parameter: " + size)
-				_, err := conn.Write([]byte("59 Size must be a number\r\n"))
-				if err != nil {
-					log.Errorf("An error occurred while writing response: %s", err.Error())
-				}
-				return
-			}
-			body := make([]byte, sizeInt)
-			_, err = conn.Read(body)
-			if err != nil {
-				log.Errorf("An error occurred while reading request body: %s", err.Error())
-				return
-			}
+		}
+		parameters[parameter[0]] = parameter[1]
+	}
 
-			titanRequest.Body = body
-			log.Infof("Titan request received for %s", strings.TrimRight(requestUri, "\r\n"))
+	titanRequest := TitanRequest{}
+	token, ok := parameters["token"]
+	if !ok {
+		titanRequest.Token = ""
+	} else {
+		titanRequest.Token = token
+	}
+
+	mimeType, ok := parameters["mime"]
+	if !ok {
+		titanRequest.MIMEType = "text/gemini"
+	} else {
+		titanRequest.MIMEType = mimeType
+	}
+
+	size, ok := parameters["size"]
+	if !ok {
+		log.Error("Missing size parameter")
+		_, err := conn.Write([]byte("59 Missing size parameter\r\n"))
+		if err != nil {
+			log.Errorf("An error occurred while writing response: %s", err.Error())
+		}
+		return
+	} else {
+		sizeInt, err := strconv.Atoi(size)
+		if err != nil {
+			log.Error("Malformed size parameter: " + size)
+			_, err := conn.Write([]byte("59 Size must be a number\r\n"))
+			if err != nil {
+				log.Errorf("An error occurred while writing response: %s", err.Error())
+			}
+			return
+		}
+		body := make([]byte, sizeInt)
+		_, err = conn.Read(body)
+		if err != nil {
+			log.Errorf("An error occurred while reading request body: %s", err.Error())
+			return
+		}
+
+		titanRequest.Body = body
+		log.Infof("Titan request received for %s", strings.TrimRight(uri.String(), "\r\n"))
+	}
+}
+
+func (s *Server) handleGeminiRequest(conn *tls.Conn, uri *url.URL) {
+	handler, err := s.resolve(uri.Path)
+	if err != nil {
+		log.Error(uri.Path + " not found")
+		_, err := conn.Write([]byte("51 Not Found\r\n"))
+		if err != nil {
+			log.Errorf("An error occurred while writing response: %s", err.Error())
 		}
 	}
+
+	handler(Request{
+		URI:  *uri,
+		conn: conn,
+	})
+
+	log.Info("Gemini request received for " + strings.TrimRight(uri.String(), "\r\n"))
 }
 
 func (s *Server) resolve(path string) (Handler, error) {
