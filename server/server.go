@@ -25,15 +25,22 @@ type TitanHandler func(request TitanRequest)
 
 // A Server contains information required to run a TCP/TLS service capable of serving Gemini content over the internet
 type Server struct {
-	staticRoutes  map[string]Handler
-	dynamicRoutes []route
-	listener      net.Listener
-	addr          string
+	staticRoutes       map[string]Handler
+	staticTitanRoutes  map[string]TitanHandler
+	dynamicRoutes      []route
+	dynamicTitanRoutes []titanRoute
+	listener           net.Listener
+	addr               string
 }
 
 type route struct {
 	regex   *regexp.Regexp
 	handler Handler
+}
+
+type titanRoute struct {
+	regex   *regexp.Regexp
+	handler TitanHandler
 }
 
 // New creates a new Server
