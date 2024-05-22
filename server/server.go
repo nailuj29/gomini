@@ -31,6 +31,7 @@ type Server struct {
 	dynamicTitanRoutes []titanRoute
 	listener           net.Listener
 	addr               string
+	running            bool
 }
 
 type route struct {
@@ -87,26 +88,21 @@ func (s *Server) ListenAndServe(addr string, tlsConfig *tls.Config) error {
 	if err != nil {
 		return err
 	}
-	defer func(lInsecure net.Listener) {
-		err := lInsecure.Close()
-		if err != nil {
-			log.Errorf("%v", err)
-		}
-	}(lInsecure)
 
 	l := tls.NewListener(lInsecure, tlsConfig)
 	s.listener = l
 	s.addr = addr
 
-	defer func(l net.Listener) {
-		err := l.Close()
-		if err != nil {
-			log.Errorf("%v", err)
+	defer func() {
+		if s.running {
+			lInsecure.Close()
+			l.Close()
 		}
-	}(l)
+	}()
 
 	log.Info("Listening on ", "gemini://"+addr+":1965")
-	for {
+	s.running = true
+	for s.running {
 		conn, err := l.Accept()
 		tlsConn, ok := conn.(*tls.Conn)
 		if !ok {
@@ -117,15 +113,16 @@ func (s *Server) ListenAndServe(addr string, tlsConfig *tls.Config) error {
 		}
 		go s.handleConnection(tlsConn)
 	}
+	return nil
+}
+
+func (s *Server) Close() error {
+	s.running = false
+	return s.listener.Close()
 }
 
 func (s *Server) handleConnection(conn *tls.Conn) {
-	defer func(conn *tls.Conn) {
-		err := conn.Close()
-		if err != nil {
-			log.Errorf("%v", err)
-		}
-	}(conn)
+	defer conn.Close()
 
 	request := make([]byte, 1026)
 	buf := make([]byte, 1)

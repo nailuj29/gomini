@@ -27,12 +27,15 @@ func TestBasicRequestResponse(t *testing.T) {
 	})
 
 	go func() {
-		err := s.ListenAndServe("localhost", &config)
-		if err != nil {
-			t.Error(err)
-			return
-		}
+		s.ListenAndServe("localhost", &config)
 	}()
+
+	defer func(s *server.Server) {
+		err := s.Close()
+		if err != nil {
+			t.Errorf("Could not close server: %v", err)
+		}
+	}(s)
 
 	clientConfig := tls.Config{InsecureSkipVerify: true}
 	response, err := Request("gemini://localhost/", &clientConfig)
@@ -80,12 +83,15 @@ func TestDynamicPathRequestResponse(t *testing.T) {
 	})
 
 	go func() {
-		err := s.ListenAndServe("localhost", &config)
-		if err != nil {
-			t.Error(err)
-			return
-		}
+		s.ListenAndServe("localhost", &config)
 	}()
+
+	defer func(s *server.Server) {
+		err := s.Close()
+		if err != nil {
+			t.Errorf("Could not close server: %v", err)
+		}
+	}(s)
 
 	clientConfig := tls.Config{InsecureSkipVerify: true}
 	response, err := Request("gemini://localhost/foo-bar", &clientConfig)
