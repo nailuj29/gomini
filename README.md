@@ -1,6 +1,7 @@
 # gomini
 [![Go Reference](https://pkg.go.dev/badge/github.com/nailuj29/gomini.svg)](https://pkg.go.dev/github.com/nailuj29/gomini)
 ![tests](https://github.com/nailuj29/gomini/actions/workflows/go.yml/badge.svg)
+[![Lines of code](https://tokei.rs/b1/github/nailuj29/gomini)](https://github.com/XAMPPRocky/tokei)
 
 Gemini Protocol libary for Golang
 
