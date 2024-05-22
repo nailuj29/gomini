@@ -14,7 +14,7 @@ import (
 )
 
 // A Handler is a function to handle a Request by calling its various methods.
-// The function is called when a request that it can handle, as outlined in Server.RegisterHandler
+// The function is called when a request that it can handle is made, as outlined in Server.RegisterHandler
 type Handler func(request Request)
 
 // A TitanHandler is a function to handle a TitanRequest by calling its various methods.
