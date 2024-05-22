@@ -8,15 +8,15 @@ Gemini Protocol libary for Golang
 Supports both client and server
 
 ## Features
-- [ ] Server
+- [x] Server
   - [x] Request Handling 
   - [x] Routing
     - [x] Basic Paths
     - [x] Dynamic Paths
   - [x] Gemtext Builder
   - [x] Read client certs
-  - [ ] Titan
-- [ ] Client
+  - [x] Titan
+- [x] Client
   - [x] Make requests
   - [x] Gemtext Parser
-  - [ ] Titan
+  - [x] Titan
