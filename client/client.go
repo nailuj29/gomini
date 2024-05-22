@@ -11,7 +11,7 @@ import (
 	"strings"
 )
 
-// Response represents a Gemini response
+// A Response represents a Gemini response
 type Response struct {
 	// Data contains the raw data returned from the server.
 	// TODO: implement function to pipe this straight to Gemtext parser
