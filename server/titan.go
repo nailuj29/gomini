@@ -10,8 +10,8 @@ import (
 	"strings"
 )
 
-// A TitanHandler is a function to handle a TitanRequest by calling its various methods.
-// The function is called when a titan request that it can handle is made as outlined in Server.RegisterTitanHandler
+// A TitanHandler is a function to handle a [TitanRequest] by calling its various methods.
+// The function is called when a titan request that it can handle is made as outlined in [Server.RegisterTitanHandler]
 type TitanHandler func(request TitanRequest)
 
 type titanRoute struct {
