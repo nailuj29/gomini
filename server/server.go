@@ -105,6 +105,7 @@ func (s *Server) ListenAndServe(addr string, tlsConfig *tls.Config) error {
 	return nil
 }
 
+// Close terminates the TCP server. The server will no longer accept requests after this method is called.
 func (s *Server) Close() error {
 	s.running = false
 	return s.listener.Close()
