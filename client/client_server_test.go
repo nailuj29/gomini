@@ -210,3 +210,77 @@ func TestTitanRequestResponse(t *testing.T) {
 		}
 	}
 }
+
+func TestInputRequestResponse(t *testing.T) {
+	cer, err := tls.LoadX509KeyPair("../examples/cert.pem", "../examples/key.pem")
+	if err != nil {
+		t.Fatal(err)
+	}
+	config := tls.Config{Certificates: []tls.Certificate{cer}, ClientAuth: tls.RequestClientCert}
+
+	s := server.New()
+
+	s.RegisterHandler("/", func(r server.Request) {
+		inp, err := r.RequestInput("Input please: ")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if inp == "" {
+			return
+		}
+
+		r.Gemtext(inp)
+	})
+
+	go func() {
+		s.ListenAndServe("localhost", &config)
+	}()
+
+	defer func(s *server.Server) {
+		err := s.Close()
+		if err != nil {
+			t.Errorf("Could not close server: %v", err)
+		}
+	}(s)
+
+	clientConfig := tls.Config{InsecureSkipVerify: true}
+	response, err := Request("gemini://localhost/", &clientConfig)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if response.StatusCode != 10 {
+		t.Fatalf("Response status code is %d", response.StatusCode)
+	}
+
+	if response.MetaData != "Input please: " {
+		t.Fatalf("Response meta data is %s", response.MetaData)
+	}
+
+	response, err = Request("gemini://localhost/?Hello%2C%20World%21", &clientConfig)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if response.StatusCode != 20 {
+		t.Fatalf("Response status code is %d", response.StatusCode)
+	}
+
+	if response.MetaData != "text/gemini" {
+		t.Fatalf("Response meta data is %s", response.MetaData)
+	}
+
+	parsed, err := gemtext.Parse(string(response.Data))
+	if err != nil {
+		t.Fatal(err)
+	}
+	textLine, ok := parsed[0].(gemtext.TextLine)
+	if !ok {
+		t.Fatalf("First line not a text line. Response data = %s", string(response.Data))
+	}
+
+	if textLine.Text != "Hello, World!" {
+		t.Fatalf("First line text is %s", textLine.Text)
+	}
+}
