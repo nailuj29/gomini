@@ -88,4 +88,19 @@ func (r *Request) GetClientCertificates() []*x509.Certificate {
 	return r.conn.ConnectionState().PeerCertificates
 }
 
-// TODO: Cert signatures
+// RequestInput requests input from the user. Returns an empty string if the user has not provided input.
+func (r *Request) RequestInput(prompt string) (string, error) {
+	if r.terminated {
+		return "", errors.New("already responded")
+	}
+
+	if r.URI.RawQuery == "" {
+		err := r.Error(10, prompt)
+		if err != nil {
+			return "", err
+		}
+		return "", nil
+	} else {
+		return url.QueryUnescape(r.URI.RawQuery)
+	}
+}
